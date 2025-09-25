@@ -142,6 +142,9 @@ export default function CEDH_DOQ_Public_Dashboard() {
 
   const pieIsEmpty = !bdData.pie?.some(d => d.value > 0);
 
+  console.log('Pie data:', bdData.pie);
+  console.log('Bar data:', bdData.bars);
+
   return (
     <div className="min-h-screen">
       {/* Topbar */}
@@ -153,12 +156,12 @@ export default function CEDH_DOQ_Public_Dashboard() {
                 CEDH BCS · Estadísticas públicas <span className="text-slate-400">(DOQ)</span>
               </h1>
               <p className="text-sm text-slate-600">
-                Snapshot a una data de tall (as-of). Dades anonimitzades des de Drupal.
+                Situación a una fecha de corte determinada. Datos anónimos desde Plataforma de Gestión.
               </p>
             </div>
             <div className="flex flex-wrap items-end gap-3">
               <div>
-                <label className="text-xs font-medium text-slate-600">Data de tall (as-of)</label>
+                <label className="text-xs font-medium text-slate-600">Fecha de corte </label>
                 <input
                   type="date"
                   className="mt-1 rounded-xl border border-slate-200 px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -167,7 +170,7 @@ export default function CEDH_DOQ_Public_Dashboard() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-600">Dimensió</label>
+                <label className="text-xs font-medium text-slate-600">Dimensión </label>
                 <select
                   className="mt-1 rounded-xl border border-slate-200 px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   value={dim}
@@ -176,7 +179,7 @@ export default function CEDH_DOQ_Public_Dashboard() {
                   {DIM_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
                 </select>
               </div>
-              <span className="badge badge-blue">as-of {asOf}</span>
+              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 border-blue-200">al {asOf}</span>
             </div>
           </header>
         </div>
@@ -187,7 +190,11 @@ export default function CEDH_DOQ_Public_Dashboard() {
         {SERIES.map(s => {
           const total = Object.values(breakdown?.[s.key] || {}).reduce((a,b)=>a+b,0);
           return (
-            <span key={s.key} className="badge" style={{ borderColor: s.color, color: s.color }}>
+            <span
+              key={s.key}
+              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium"
+              style={{ borderColor: s.color, color: s.color }}
+            >
               {s.name}: <span className="ml-1 tabular-nums">{total.toLocaleString()}</span>
             </span>
           );
@@ -198,7 +205,7 @@ export default function CEDH_DOQ_Public_Dashboard() {
         {/* Cards */}
         <section className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
           {cards.map((c, i) => (
-            <div key={c.key} className="card card-pad">
+            <div key={c.key} className="p-4 md:p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
               <div className="text-xs uppercase tracking-wide text-slate-500">{c.label}</div>
               <div className="mt-1 text-2xl font-semibold tabular-nums">
                 {loading && !summary ? '…' : c.value.toLocaleString()}
@@ -210,37 +217,35 @@ export default function CEDH_DOQ_Public_Dashboard() {
         {/* Charts */}
         <section className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-          <div className="card">
-            <div className="card-pad border-b border-slate-100">
+          <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
+            <div className="border-b border-slate-100 pb-2">
               <h2 className="text-base font-semibold">Repartiment per indicador</h2>
             </div>
-
-            {pieIsEmpty ? (
-              <div className="h-72 grid place-items-center text-slate-500 text-sm">
-                Sense dades per a {asOf}
-              </div>
-            ) : (
-              <div className="h-72 px-2 pb-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie dataKey="value" data={bdData.pie} outerRadius={100} label>
-                      {bdData.pie.map((entry, i) => {
-                        const series = SERIES[i]; // ordre: quejas, canalizaciones, orientaciones, acompanamientos
-                        return <Cell key={i} fill={series?.color || "#CBD5E1"} />;
-                      })}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+            
+            {/* Contenidor amb alçada fixa */}
+            <div className="h-[400px] w-full"> {/* Canvia l'alçada segons necessitis */}
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie 
+                    data={bdData.pie} 
+                    dataKey="value" 
+                    nameKey="name"
+                    cx="50%" 
+                    cy="50%" 
+                    outerRadius={100}
+                  >
+                    {bdData.pie.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-
-
-          {/* Bars */}
-          <div className="card lg:col-span-2">
-            <div className="card-pad border-b border-slate-100">
+          <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm lg:col-span-2">
+            <div className="border-b border-slate-100 pb-2">
               <h2 className="text-base font-semibold">
                 Desglossament per {DIM_OPTIONS.find(d => d.key === dim)?.label}
               </h2>
@@ -275,22 +280,22 @@ export default function CEDH_DOQ_Public_Dashboard() {
             <div className="text-xs text-slate-500">{(list.total ?? 0).toLocaleString()} resultats</div>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm table-zebra">
+            <table className="min-w-full text-sm">
               <thead>
                 <tr>
-                  <th className="px-3 py-2">ID</th>
-                  <th className="px-3 py-2">Indicador</th>
-                  <th className="px-3 py-2">Estat actual</th>
-                  <th className="px-3 py-2">Municipi</th>
-                  <th className="px-3 py-2">Autoritat</th>
-                  <th className="px-3 py-2">Drets</th>
-                  <th className="px-3 py-2">Sexe</th>
-                  <th className="px-3 py-2">Dies</th>
+                  <th className="px-3 py-2 text-left text-slate-600 font-medium bg-slate-50">ID</th>
+                  <th className="px-3 py-2 text-left text-slate-600 font-medium bg-slate-50">Indicador</th>
+                  <th className="px-3 py-2 text-left text-slate-600 font-medium bg-slate-50">Estat actual</th>
+                  <th className="px-3 py-2 text-left text-slate-600 font-medium bg-slate-50">Municipi</th>
+                  <th className="px-3 py-2 text-left text-slate-600 font-medium bg-slate-50">Autoritat</th>
+                  <th className="px-3 py-2 text-left text-slate-600 font-medium bg-slate-50">Drets</th>
+                  <th className="px-3 py-2 text-left text-slate-600 font-medium bg-slate-50">Sexe</th>
+                  <th className="px-3 py-2 text-left text-slate-600 font-medium bg-slate-50">Dies</th>
                 </tr>
               </thead>
               <tbody>
                 {(list.results || []).map((row, idx) => (
-                  <tr key={row.id_public} className="border-b border-slate-100">
+                  <tr key={row.id_public} className={idx % 2 === 0 ? "bg-slate-50/50 border-b border-slate-100" : "border-b border-slate-100"}>
                     <td className="px-3 py-2 font-mono text-xs">{row.id_public}</td>
                     <td className="px-3 py-2 capitalize">{row.indicador_publico}</td>
                     <td className="px-3 py-2">{row.estado_actual}</td>
