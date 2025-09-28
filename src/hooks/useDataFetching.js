@@ -1,81 +1,91 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 export function useDataFetching({ mode, asOf, dateRange, dim }) {
-  console.group('useDataFetching');
-  console.log('Paràmetres rebuts:', { mode, asOf, dateRange, dim });
-
   const [data, setData] = useState({ summary: null, breakdown: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const mountedRef = useRef(true);
 
   useEffect(() => {
-    console.log('Effect executant-se amb:', { mode, asOf, dateRange, dim });
-    
+    let isSubscribed = true;
+
     const loadData = async () => {
-      console.log('🔄 Iniciant càrrega de dades');
-      
-      if (!mountedRef.current) return;
-      setLoading(true);
-      
       try {
-        // Dades de prova
-        const mockData = {
-          summary: {
-            quejas: 25,
-            canalizaciones: 15,
-            orientaciones: 30,
-            acompanamientos: 10,
-            total: 80
-          },
-          breakdown: [
-            { 
-              label: "Homes", 
-              quejas: 15, 
-              canalizaciones: 8, 
-              orientaciones: 18, 
-              acompanamientos: 6 
-            },
-            { 
-              label: "Dones", 
-              quejas: 10, 
-              canalizaciones: 7, 
-              orientaciones: 12, 
-              acompanamientos: 4 
-            }
-          ]
-        };
-
-        // Simulem un petit retard
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        console.log('✅ Dades carregades:', mockData);
+        setLoading(true);
         
-        if (mountedRef.current) {
-          setData(mockData);
-          setLoading(false);
+        const baseUrl = import.meta.env.VITE_API_BASE;
+        
+        // Només fem servir les crides que sabem que existeixen
+        const breakdownUrl = `${baseUrl}/api/doq/public/breakdown?as_of=${asOf}&dim=${dim}`;
+
+        console.log('📡 Cargando datos de:', { breakdownUrl });
+
+        const breakdownRes = await axios.get(breakdownUrl);
+
+        if (!isSubscribed) return;
+
+        if (breakdownRes.data) {
+          // Calculem el summary sumant els valors de cada categoria
+          const summary = {
+            quejas: Object.values(breakdownRes.data.quejas || {}).reduce((a, b) => a + b, 0),
+            orientaciones: Object.values(breakdownRes.data.orientaciones || {}).reduce((a, b) => a + b, 0),
+            canalizaciones: Object.values(breakdownRes.data.canalizaciones || {}).reduce((a, b) => a + b, 0),
+            acompanamientos: Object.values(breakdownRes.data.acompanamientos || {}).reduce((a, b) => a + b, 0)
+          };
+          
+          // Afegim el total
+          summary.total = Object.values(summary).reduce((a, b) => a + b, 0);
+
+          // Transformem el breakdown al format que necessitem
+          const categories = new Set();
+          ['quejas', 'orientaciones', 'canalizaciones', 'acompanamientos'].forEach(type => {
+            if (breakdownRes.data[type]) {
+              Object.keys(breakdownRes.data[type]).forEach(cat => categories.add(cat));
+            }
+          });
+
+          const breakdownData = Array.from(categories).map(category => ({
+            label: category,
+            quejas: breakdownRes.data.quejas?.[category] || 0,
+            orientaciones: breakdownRes.data.orientaciones?.[category] || 0,
+            canalizaciones: breakdownRes.data.canalizaciones?.[category] || 0,
+            acompanamientos: breakdownRes.data.acompanamientos?.[category] || 0
+          }));
+
+          console.log('📊 Dades processades:', { summary, breakdownData });
+
+          setData({
+            summary,
+            breakdown: breakdownData
+          });
+          setError(null);
+        } else {
+          throw new Error('Format de resposta invàlid');
         }
       } catch (err) {
-        console.error('Error en carregar dades:', err);
-        if (mountedRef.current) {
-          setError(err.message);
+        console.error('❌ Error cargando datos:', err);
+        if (isSubscribed) {
+          setError(err.response?.data?.message || err.message || 'Error desconocido');
+          setData({ summary: null, breakdown: null });
+        }
+      } finally {
+        if (isSubscribed) {
           setLoading(false);
         }
       }
     };
 
     loadData();
-    
+
     return () => {
-      console.log('🧹 Netejant effect');
-      mountedRef.current = false;
+      isSubscribed = false;
     };
   }, [mode, asOf, dateRange, dim]);
 
-  console.groupEnd();
-  
-  const hasData = Boolean(data?.summary && data?.breakdown?.length > 0);
-  console.log('Estat actual:', { loading, hasData, error });
-
-  return { data, loading, error, hasData };
+  return {
+    data,
+    loading,
+    error,
+    hasData: Boolean(data?.summary && Array.isArray(data?.breakdown))
+  };
 }

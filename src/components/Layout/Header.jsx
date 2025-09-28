@@ -5,13 +5,13 @@ export default function Header({ mode, asOf, dateRange, onAsOfChange, onDateRang
         <header className="flex flex-col gap-6 py-8">
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">
-              CEDH BCS · Estadístiques públiques <span className="text-slate-400">(DOQ)</span>
+              CEDH BCS · Estadísticas públicas <span className="text-slate-400">(Dirección Orientación y Quejas)</span>
             </h1>
             <p className="text-sm text-slate-600">
               {mode === 'active' 
-                ? 'Situació a una data de tall determinada'
-                : 'Expedients creats en el període seleccionat'}
-              . Dades anònimes des de Plataforma de Gestió.
+                ? 'Situación a una fecha de corte determinada'
+                : 'Expedientes creados en el período seleccionado'}
+              . Datos anónimos desde Plataforma de Gestión.
             </p>
           </div>
 

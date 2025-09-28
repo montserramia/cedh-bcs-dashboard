@@ -11,7 +11,7 @@ export default function DistributionPieChart({ data }) {
 
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm">
-      <h3 className="text-lg font-semibold mb-4">Distribució per tipus</h3>
+      <h3 className="text-lg font-semibold mb-4">Distribución por tipos</h3>
       <div className="h-[400px] w-full">
         <ResponsiveContainer>
           <PieChart>

@@ -7,7 +7,7 @@ export default function BreakdownChart({ data, dimension }) {
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm">
       <h3 className="text-lg font-semibold mb-4">
-        Desglossament per {dimension}
+        Desglosamiento por {dimension}
       </h3>
       <div className="h-[400px] w-full">
         <ResponsiveContainer>
